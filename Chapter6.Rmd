@@ -1,0 +1,188 @@
+---
+title: "Chapter6"
+author: "Chelsea Helion"
+date: "11/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+
+setwd(here::here("data/DBDA2Eprograms"))
+source("DBDA2E-utilities.R")
+source("BernBeta.R")
+```
+
+
+```{r}
+betaABfromMeanKappa(mean=0.25, kappa = 4)
+betaABfromModeKappa(mode=0.25, kappa = 4)
+betaABfromMeanSD(mean=0.5, sd = 0.1)
+```
+## basketball example
+```{r}
+pmode <- .75
+n <- 25
+N <- 20
+z <- 17
+a <- pmode*(n - 2) + 1
+b <- (1-pmode) * (n - 2) + 1
+
+bayesBball <- function(a, b, z, N) {
+  posterior <- (((z/N)*(N/(N+a+b))) + ((a/(a+b))*((a+b)/(N+a+b))))
+  return(posterior)
+}
+
+bayesBball(a,b,z,N)
+
+```
+```{r}
+t = 0.75 # specify the prior mode
+n = 25 # specify the effective prior sample size
+a = t*(n-2)+1 # convert to beta shape parameter a
+b = (1-t)*(n-2)+1 # convert to beta shape parameter b
+Prior = c(a,b) # specify prior as vector with two shape parameters
+
+# specify the data
+N = 20 # the total number of flips
+z = 17 # the number of heads
+Data = c(rep(0,N-z), rep(1,z)) # convert N and z into a vector of 0's and 1's
+openGraph(width=5, height=7)
+posterior = BernBeta(priorBetaAB = Prior, Data = Data, plotType = "Bars",
+                     showCentTend = "Mode", showHDI = TRUE, showpD = FALSE)
+saveGraph(file="BernBetaExample", type="jpg")
+```
+# Exercise 6.1
+```{r}
+# a) start with a prior distribution that expresses some uncertainty that a coin is fair: beta(theta | 4,4). Flip the coin once, suppose we get a head. What is the posterior distribution?
+
+t = .50 # prior mean
+n = 8 # effective prior sample size
+a = 4
+b = 4
+Prior = c(a,b) # specify prior as vector 
+
+# specify the data
+N = 1
+z = 1
+Data = c(rep(0, N-z), rep(1,z))
+posterior = BernBeta(priorBetaAB = Prior, Data = Data, plotType = "Bars",
+                     showCentTend = "Mean", showHDI = TRUE, showpD = FALSE)
+
+# b) Use the posterior from the previous flip as the prior for the next flip. Suppose we flip again and get a head. Now what is the new posterior?
+
+post <- BernBeta(c(4,4), c(1))
+post <- BernBeta(post, c(1))
+
+# c) using the posterior as the prior for the next flip, flip a third time and get a  tail. What is the new posterior?
+
+post <- BernBeta(post, c(0))
+
+# d) do the same three updates, but in the other T, H, H instead of H, H, T. Is the final posterior distribution the same for both flip results?
+
+# specify the data
+N = 1
+z = 0
+Data = c(rep(0, N-z), rep(1,z))
+posterior = BernBeta(priorBetaAB = Prior, Data = Data, plotType = "Bars",
+                     showCentTend = "Mean", showHDI = TRUE, showpD = FALSE)
+post <- BernBeta(c(4,4), c(1))
+post <- BernBeta(post, c(1))
+```
+# Exercise 6.2
+```{r}
+# a) suppose that before that newspaper poll, your prior belief was a uniform distribution. What is the 95% HDI on your beliefs after learning of the newspaper poll results?
+
+# of 100 sampled people, 58 preferred candidate A, rest preferred B
+
+t = 0.5
+a = 1
+b = 1
+Prior = c(a,b)
+
+# specify the data
+N = 100
+z = 58
+Data = c(rep(0, N-z), rep(1,z))
+posterior = BernBeta(priorBetaAB = Prior, Data = Data, plotType = "Bars",
+                     showCentTend = "Mean", showHDI = TRUE, showpD = FALSE)
+
+# b) You want to conduct a follow-up poll to narrow down your estimate of the population's preference. In your follow-up poll, you randomly sample 100 other people and find that 57 prefer candidate A and the remainder prefer candidate B. Assuming that peoples' opinions have not changed between polls, what is the 95% HDI on the posterior?
+
+# specify the data
+t = posterior
+n = 200
+a = 59
+b = 43
+Prior = c(a,b)
+N = 100
+z = 57
+Data = c(rep(0, N-z), rep(1,z))
+posterior = BernBeta(priorBetaAB = Prior, Data = Data, plotType = "Bars",
+                     showCentTend = "Mean", showHDI = TRUE, showpD = FALSE)
+```
+# Exercise 6.3
+```{r}
+# suppose you train people in a simple learning experiment, as follows. When people see the two words "radio" and "ocean" on the computer screen, they should press the F key on the computer keyboard. They see several repetitions and learn the response well. Then you introduce another correspondence for them to learn: Whenever the words "radio" and "mountain" appear, they should press the J key on the computer keyboard. You keep training them until they know both correspondences well. Now you probe what they've learned by asking them about two novel test items. For the first test, you show the word "radio" by itself, and ask them to make the word "radio" by itself and instruct them to make their best response (F or J) based on what they learned before. For the second test, you show them the two words "ocean" and "mountain" and ask them to make the best response. You do this procedure with 50 people. Your data show that for "radio" by itself, 40 people chose F and 10 chose J. For the word combination "ocean" and "mountain", 15 chose F and 35 chose J. Are people biased toward F or J for either of the two probe types? To answer this question assume a uniform prior and use a 95% HDI to decide which biases can be declared to be credible. 
+
+## radio bias
+a <- 1
+b <- 1
+Prior = c(a,b)
+N = 50
+z = 40
+Data = c(rep(0, N-z), rep(1,z))
+posterior = BernBeta(priorBetaAB = Prior, Data = Data, plotType = "Bars",
+                     showCentTend = "Mean", showHDI = TRUE, showpD = FALSE)
+
+# ocean/mountain bias
+a <- 1
+b <- 1
+Prior = c(a,b)
+N = 50
+z = 15
+Data = c(rep(0, N-z), rep(1,z))
+posterior = BernBeta(priorBetaAB = Prior, Data = Data, plotType = "Bars",
+                     showCentTend = "Mean", showHDI = TRUE, showpD = FALSE)
+```
+# Exercise 6.4
+```{r}
+# Suppose we have a coin that we know comes from a magic-trick store, and therefore we believe that the coin is strongly biased either usually to come up heads or usually to come up tails, but we don't know which. Express this belief as a beta prior. 
+
+a <- 0.1
+b <- 0.1
+Prior <- c(a,b)
+N = 5
+z = 4
+Data = c(rep(0, N-z), rep(1,z))
+posterior = BernBeta(priorBetaAB = Prior, Data = Data, plotType = "Bars",
+                     showCentTend = "Mean", showHDI = TRUE, showpD = FALSE)
+```
+# Exercise 6.5
+```{r}
+# a) suppose you see a coin that you know is minted by the government and has not been tampered with. Therefore you have a strong belief that the coin is fair. You flip the coin 10 times and get nine heads. What is your predicted probability of heads for the 11th flip; justify your choice of prior.
+
+a <- 100
+b <- 100
+Prior <- c(a,b)
+N = 10
+z = 9
+Data = c(rep(0, N-z), rep(1,z))
+posterior = BernBeta(priorBetaAB = Prior, Data = Data, plotType = "Bars",
+                     showCentTend = "Mean", showHDI = TRUE, showpD = FALSE)
+
+# b) Now you have a different coin, this one made of some strange material and marked (in fine print) "Patent Pending, International Magic, Inc)." You flip the coin 10 times, and get 9 heads. What is your predicted probability of heads for the 11th flip?
+
+a <- 0.1
+b <- 0.1
+Prior <- c(a,b)
+N = 10
+z = 9
+Data = c(rep(0, N-z), rep(1,z))
+posterior = BernBeta(priorBetaAB = Prior, Data = Data, plotType = "Bars",
+                     showCentTend = "Mean", showHDI = TRUE, showpD = FALSE)
+
+```
+
+

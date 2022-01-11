@@ -1,0 +1,29 @@
+---
+title: "Chapter7"
+author: "Chelsea Helion"
+date: "11/18/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+
+setwd(here::here("data/DBDA2Eprograms"))
+source("DBDA2E-utilities.R")
+```
+
+
+```{r}
+# Exercise 7.3
+# In this case, you will see that the Metropolis algorithm operates with multimodal distributions. 
+# A. Consider a prior distribution on coin bias that puts most credibility at 0.0, 0.5, and 1.0, which we will formulate as p(theta) = (cos(4piTheta)+1)^2/1.5 
+# B. Make a plot of the prior 
+theta = seq(0,1,length = 501);
+plot(theta, (cos(4*pi*theta)+1)^2/1.5)
+# C. In the script BernMetrop.R, find the function that specifies the prior distribution. Inside that function definition, comment out the line that assigns a beta density to pTheta, and instead put in a trimodal prior
+
+
+```
+
+

@@ -1,0 +1,121 @@
+---
+title: "Chapter5"
+author: "Chelsea Helion"
+date: "12/17/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+```
+
+## code to create figures 5.2, 5.2, etc. 
+```{r}
+## run original program
+setwd(here::here("data/DBDA2Eprograms"))
+source("DBDA2E-utilities.R")
+source("BernGrid.R")
+
+## there are three user-specified arguments:
+## Theta: the prior probability masses at the function-specified default values
+## pTheta: the prior probability masses at each of those values
+## Data: data, which consists of a vector of 0's and 1's
+
+Theta = seq(0,1, length = 1001) # specify fine comb for Theta
+pTheta = pmin(Theta, 1 - Theta) # triangular shape for pTheta
+pTheta = pTheta/sum(pTheta) # make pTheta sum to 1
+Data = c(rep(0,10), rep(1,10)) # same as c(0,0,0,1), 25% heads with N = 4
+openGraph(width=5, height = 7) # open a graphics window
+posterior = BernGrid(Theta, pTheta, Data, plotType = "Bars", showCentTend = "Mode", showHDI = T, showpD = F)
+saveGraph(here::here("figs", "BernGridExample.jpg"))
+```
+
+## Exercise 5.1
+```{r}
+## relies heavily on Table 5.4 and subsequent discussion. Suppose that the randomly selected person in Table 5.4 gets retested after the first result was positive, and on retest, the result is negative. When taking into account both tests, what is the probability that the person has the disease? Hint: For the prior probability of the retest, use the posterior computed from Table 5.4, retaining as many decimal places as possible.
+
+#specify original prior
+pDisease = .001
+pPositiveGivenDisease = .99
+pPositiveGivenNoDisease = .05
+pNegativeGivenDisease = (1 - pPositiveGivenDisease)
+pNegativeGivenNoDisease = (1 - pPositiveGivenNoDisease)
+
+# Bayes rule for first positive test:
+pDiseaseGivenPositive = (pPositiveGivenDisease * pDisease) / ((pPositiveGivenDisease * pDisease) + (pPositiveGivenNoDisease * (1-pDisease)))
+
+## set new pDisease based on first positive test
+pDisease = pDiseaseGivenPositive
+
+# Bayes rule for second negative test
+pDiseaseGivenNegative = (pNegativeGivenDisease * pDisease)/((pNegativeGivenDisease * pDisease) + (pNegativeGivenNoDisease * (1 - pDisease)))
+```
+
+## Exercise 5.2 
+```{r}
+# Goal is to get an intuition for the previous results using "natural frequency" and "Markov" representations
+
+# A) Suppose that a population consists of 100,000 people. Compute how many people would be expected to fall into each cell of Table 5.4. To compute the expected frequency of a cell, multiple the cell probability by the size of the population. 
+
+pDisease = .001
+pNoDisease = (1 - pDisease)
+pPositiveGivenDisease = .99
+pPositiveGivenNoDisease = .05
+popSize = 100000
+
+## upper left, pPositiveGivenDisease 
+popPositiveGivenDisease = (pPositiveGivenDisease) * (pDisease) * popSize
+
+## bottom left, pNegativeGivenDisease
+popNegativeGivenDisease = (1 - pPositiveGivenDisease) * (pDisease) * popSize
+
+## upper right, pPositiveGivenNoDisease 
+popPositiveGivenNoDisease = (pPositiveGivenNoDisease) * (1 - pDisease) * popSize
+
+## bottom right, pNegativeGivenNoDisease
+popNegativeGivenNoDisease = (1 - pPositiveGivenNoDisease) * (1 - pDisease) * popSize
+
+# B) from the cell frequencies alone, determine the proportion of people who have the disease given that their test result is positive 
+
+propDiseaseGivenPos = popPositiveGivenDisease/(popPositiveGivenDisease + popPositiveGivenNoDisease)
+
+# C) This time with a "Markov" representation! 
+
+N = 10000000
+popNoDisease = .999 * N ### 9990000
+popDisease = .001 * N ### 10000
+
+DiseaseTest1 = popDisease * (.99) ## 9900
+DiseaseRetest = DiseaseTest1 * (1-.99)
+
+NoDiseasePosTest1 = popNoDisease * (.05)
+NoDiseaseRetest = NoDiseasePosTest1 * (1 -.05)
+
+# D) What proportion of people who test positive at first and then test negative actually have the disease?
+
+DiseaseRetest/(DiseaseRetest + NoDiseaseRetest)
+```
+## Exercise 5.3
+```{r}
+# a) Suppose a person selected at random from the population gets the test and it comes back negative. Compute the probability that the person has the disease. 
+
+pDisease = .001
+pPositiveGivenDisease = .99
+pPositiveGivenNoDisease = .05
+
+pNegativeGivenNoDisease = (1 - pPositiveGivenDisease) * (pDisease) / 
+((1 - pPositiveGivenDisease) * (pDisease) + (1- pPositiveGivenNoDisease) * (1 - pDisease))
+
+# b) the person gets retested, and then the result is positive. Compute the probability that the person has the disease
+
+pDisease = pNegativeGivenNoDisease
+
+pDiseaseGivenPositive = (pPositiveGivenDisease * pDisease) /
+  ((pPositiveGivenDisease * pDisease) + ((pPositiveGivenNoDisease * (1 - pDisease))))
+```
+## Exercise 5.4
+```{r}
+## open up the Bern Tests, describe what they do
+```
+

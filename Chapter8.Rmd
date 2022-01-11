@@ -1,0 +1,92 @@
+---
+title: "Chapter8"
+author: "Chelsea Helion"
+date: "11/19/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#library(here)
+```
+
+```{r}
+## run original program
+#source("DBDA2E-utilities.R")
+library(rjags)
+library(runjags)
+
+```
+
+```{r}
+## read in data
+myData = read.csv("/Users/tua37526/Dropbox/BayesTutorial/data/DBDA2Eprograms/z15N50.csv")
+y = myData$y
+Ntotal = length(y)
+dataList = list(
+  y = y, 
+  Ntotal = Ntotal
+)
+```
+## specify model
+```{r}
+modelString = " #open quote for model string
+model {
+  for (i in 1:Ntotal) {
+    y[i] ~ dbern(theta) #likelihood
+  }
+  theta ~ dbeta(1,1) #prior
+}
+"
+writeLines(modelString, con ="TEMPmodel.txt")
+```
+## initialize chains
+```{r}
+thetaInit = sum(y)/length(y)
+initsList = list(theta = thetaInit)
+```
+## here is an example  of a function that returns a named list with a different value for every theta every time it is called
+```{r}
+initsList = function()  {
+  resampledY = sample(y, replace=TRUE) # resample values from y
+  thetaInit = sum(resampledY)/length(resampledY) # compute proportion (MLE)
+  thetaInit = 0.001+.998*thetaInit # keep away from 0.1
+  return(list(theta=thetaInit)) # return as a named list
+}
+```
+# to demonstrate how this function works, suppose the data y consist of 75% 1's:
+```{r}
+y = c(rep(0,25),rep(1,75))
+initsList()
+initsList()
+initsList()
+```
+## Generate chains
+```{r}
+jagsModel = jags.model(file = "TEMPmodel.txt", data = dataList, inits = initsList,
+                       n.chains = 3, n.adapt = 500)
+update(jagsModel, n.iter=500)
+codaSamples = coda.samples(jagsModel, variable.names = c("theta"), n.iter = 3334)
+```
+## examine chains
+```{r}
+diagMCMC(codaObject = codaSamples, parName = "theta")
+plotPost(codaSamples[,"theta"], main = "theta", xlab=bquote(theta),
+         cenTend = "median", compVal = 0.5, ROPE = c(0.45, 0.55), credMass = 0.90, showCurve = T)
+```
+## simplified scripts for frequently used analysis
+```{r}
+# Load the data
+myData = read.csv("/Users/tua37526/Dropbox/BayesTutorial/data/DBDA2Eprograms/z15N50.csv")
+# Load the functions genMCMC, smryMCMC, and plotMCMC:
+source(file = "Jags-Ydich-Xnom1subj-MbernBeta.R")
+#Generate the MCMC chain:
+mcmcCoda = genMCMC(data = myData, numSavedSteps=10000)
+#Display diagnostics of chain, for the specified parameter:
+diagMCMC(mcmcCoda, parName = "theta")
+#Display numerical summary statistics of chain:
+smryMCMC(mcmcCoda)
+#Display graphical posterior information:
+plotMCMC(mcmcCoda, data=y)
+```
+
