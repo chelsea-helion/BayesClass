@@ -3,6 +3,7 @@ library(brms)
 library(bayesplot)
 library(tidybayes)
 library(skimr)
+library(patchwork)
 
 ## bayes homework for HLM
 ## some code adapted from: https://bookdown.org/ajkurz/DBDA_recoded/hierarchical-models.html#extending-the-hierarchy-subjects-within-categories
@@ -74,12 +75,14 @@ post_s <-
   mutate(`Democrat - Republican` = Democrat - Republican)
 head(post_s)
 
+## graphing functions
+## copied from: https://bookdown.org/ajkurz/DBDA_recoded/hierarchical-models.html#extending-the-hierarchy-subjects-within-categories
 make_histogram <- function(data, mapping, title, xlim, ...) {
   
   ggplot(data, mapping) +
     geom_histogram(fill = "grey67", color = "grey92", size = .2,
                    bins = 30) +
-    stat_pointintervalh(aes(y = 0), 
+    stat_pointinterval(aes(y = 0), 
                         point_interval = mode_hdi, .width = .95) +
     scale_y_continuous(NULL, breaks = NULL) +
     labs(title = title,
@@ -88,6 +91,46 @@ make_histogram <- function(data, mapping, title, xlim, ...) {
     theme(legend.position = "none")
   
 }
+
+make_point <- function(data, mapping, limits, ...) {
+  
+  ggplot(data, mapping) +
+    geom_abline(color = "white") +
+    geom_point(color = "grey50", size = 1/10, alpha = 1/20) +
+    coord_cartesian(xlim = limits,
+                    ylim = limits)
+  
+}
+
+p1 <-
+  make_histogram(data = post_s,
+                 aes(x = Democrat), 
+                 title = "Democrat", 
+                 xlim = c(0.7, 1))
+p1
+
+p2 <-
+  make_histogram(data = post_s,
+                 aes(x = `Democrat - Republican`), 
+                 title = "Democrat - Republican", 
+                 xlim = c(-.1, .07))
+p2
+
+p3 <-
+  make_point(data = post_s,
+             aes(x = Democrat, y = Republican),
+             limits = c(.75, .90))
+p3
+
+p4 <-
+  make_histogram(data = post_s,
+                 aes(x = Republican), 
+                 title = "Republican", 
+                 xlim = c(.7, 1))
+p4
+
+p1 + p2 + p3 + p4
+
 
 
 
